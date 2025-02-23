@@ -26,12 +26,12 @@ const PageThree = () => {
 
       <View style={styles.buttonContainer}>
         <Button
-          title="Get Started"
+          title="Get Started!"
           onPress={() => router.replace('/')}
         />
-        <Link href="/" style={styles.skipText}>
-          Skip
-        </Link>
+        <Text style={styles.skipText}>
+          
+        </Text>
       </View>
 
     </SafeAreaView>
