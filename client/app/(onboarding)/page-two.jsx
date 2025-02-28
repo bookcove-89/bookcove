@@ -31,7 +31,7 @@ const PageTwo = () => {
           title='Next'
           onPress={() => router.replace('/page-three')}
         />
-        <Link href="/" style={styles.skipText}>
+        <Link href="/sign-up" style={styles.skipText}>
           Skip
         </Link>
       </View>
@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   circle: {
-    width: 15,
-    height: 15,
+    width: 10,
+    height: 10,
     borderRadius: 50,
     margin: 10,
     backgroundColor: '#D9D9D9',

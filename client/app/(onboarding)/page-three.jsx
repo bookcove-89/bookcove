@@ -14,8 +14,8 @@ const PageThree = () => {
       </View>
 
       <View style={styles.text}>
-        <Text style={styles.heading}>Track Your Reading Progress</Text>
-        <Text style={styles.subtext}>Easily log the books you've read, organize your collection, and track your progress—all in one place.</Text>
+        <Text style={styles.heading}>Discover & Stay Motivated</Text>
+        <Text style={styles.subtext}>Mark your favorite books, set reading goals, and never lose track of your next great read!</Text>
       </View>
 
       <View style={styles.circleContainer}>
@@ -27,7 +27,7 @@ const PageThree = () => {
       <View style={styles.buttonContainer}>
         <Button
           title="Get Started!"
-          onPress={() => router.replace('/')}
+          onPress={() => router.replace('/sign-up')}
         />
         <Text style={styles.skipText}>
           
@@ -46,8 +46,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   circle: {
-    width: 15,
-    height: 15,
+    width: 10,
+    height: 10,
     borderRadius: 50,
     margin: 10,
     backgroundColor: '#D9D9D9',
