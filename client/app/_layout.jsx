@@ -15,6 +15,8 @@ const RootLayout = () => {
     "Poppins-Medium": require("../assets/fonts/Poppins-Medium.ttf"),
     "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
     "Poppins-SemiBold": require("../assets/fonts/Poppins-SemiBold.ttf"),
+    "Caveat": require("../assets/fonts/Caveat-VariableFont_wght.ttf"),
+    "Patrick-Hand": require("../assets/fonts/PatrickHand-Regular.ttf")
   });
   useEffect(() => {
     if (error) throw error;
@@ -35,6 +37,7 @@ const RootLayout = () => {
     <>
       <Stack>
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
     </>
