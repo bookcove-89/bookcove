@@ -1,7 +1,16 @@
-import { Stack } from 'expo-router'
+import { Stack, Redirect } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { useGlobalContext } from '../../context/GlobalProvider'
 
 const OnboardingLayout = () => {
+  // TODO: make sure onboarding screen are only displayed once
+
+  // get loading and logged in state from context
+  const { loading, isLogged } = useGlobalContext()
+
+  // if there is no loading and current user is not logged in redirect to sign in
+  if (!loading && isLogged) return <Redirect href="/home" />
+
   return (
     <>
       <Stack>
