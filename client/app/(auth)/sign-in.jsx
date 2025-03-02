@@ -1,27 +1,26 @@
-import { Alert, Text, View, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native'
+import { Alert, StyleSheet, Text, View, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native'
 import { Link, router, Redirect } from 'expo-router'
 import { useState } from 'react'
 import Logo from '../../components/Logo'
 
 import { useGlobalContext } from '../../context/GlobalProvider'
-import { createUser, login } from '../../lib/appwrite'
+import { getCurrentUser, login } from '../../lib/appwrite'
 import Button from '../../components/Button'
 import FormField from '../../components/FormField'
 import BookIcon from '../../assets/images/book.svg'
 import styles from './styles'
 
-const SignUp = () => {
+const SignIn = () => {
   const { setUser, setIsLogged } = useGlobalContext()
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
-    name: '',
     email: '',
     password: ''
   })
 
   const submit = async () => {
     // check for empty fields
-    if (form.name === "" || form.email === "" || form.password === "") {
+    if (form.email === "" || form.password === "") {
       Alert.alert("Error", "All fields are required. Please complete the missing information.")
       return
     }
@@ -30,14 +29,13 @@ const SignUp = () => {
     setSubmitting(true)
 
     try {
-      // create new account
-      const res = await createUser(form.name, form.email, form.password)
-      // login the new user
+      // login user
       await login(form.email, form.password)
+      // get the current user
+      const res = await getCurrentUser()
 
       // clear form
       setForm({
-        name: '',
         email: '',
         password: ''
       })
@@ -47,13 +45,13 @@ const SignUp = () => {
       setIsLogged(true)
 
       // display success message
-      Alert.alert("Success", "New account created!")
+      Alert.alert("Success", "User signed in successfully");
 
       // redirect to home screen
       router.replace("/home")
 
     } catch (error) {
-      // display error message
+      // display error messages
       Alert.alert("Error", error.message)
     } finally {
       // clear loading state
@@ -71,15 +69,10 @@ const SignUp = () => {
           <View>
             <View style={styles.heading}>
               <BookIcon height={45} width={45} />
-              <Text style={styles.headingtxt}>Signup To BookCove </Text>
+              <Text style={styles.headingtxt}>Login To BookCove </Text>
             </View>
             <View style={styles.form}>
-              <FormField
-                title='Name'
-                value={form.name}
-                placeholder='Enter First Name'
-                onChangeText={(e) => setForm({ ...form, name: e })}
-              />
+              <Link href='/home'>Home</Link>
               <FormField
                 title='Email'
                 value={form.email}
@@ -94,14 +87,13 @@ const SignUp = () => {
               />
               <View style={{ paddingVertical: 20 }}>
                 <Button
-                  title='Sign Up'
+                  title='Login'
                   onPress={submit}
                   isLoading={submitting}
-                  otherStyles={{ padding: 13 }}
                 />
               </View>
-              <Text style={styles.txt}> Already Have an Account?
-                <Link href="/sign-in" style={{ color: "#FF7051" }}> Login Here</Link>
+              <Text style={styles.txt}> Don't Have an Account?
+                <Link href="/sign-up" style={{ color: "#FF7051" }}> Signup Here</Link>
               </Text>
             </View>
           </View>
@@ -112,4 +104,4 @@ const SignUp = () => {
   )
 }
 
-export default SignUp
+export default SignIn
