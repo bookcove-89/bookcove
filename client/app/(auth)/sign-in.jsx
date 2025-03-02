@@ -72,7 +72,6 @@ const SignIn = () => {
               <Text style={styles.headingtxt}>Login To BookCove </Text>
             </View>
             <View style={styles.form}>
-              <Link href='/home'>Home</Link>
               <FormField
                 title='Email'
                 value={form.email}
