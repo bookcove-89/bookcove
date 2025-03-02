@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 15,
     fontFamily: 'Poppins-Regular',
   },
   icon: {
