@@ -5,20 +5,33 @@ import { TextInput } from 'react-native'
 import EyeIcon from "../assets/icons/eye.svg"
 import EyeOffIcon from "../assets/icons/eye-off.svg"
 
-const FormField = ({ title, value, placeholder, onChangeText, ...props }) => {
+const FormField = ({ title, value, placeholder, onChangeText, children, onSubmitEnter, ...props }) => {
   const [showPassword, setShowPassword] = useState(false);
+
+  // When the user submits (presses Enter), call the passed onSubmitEnter function
+  const handleSubmit = () => {
+    if (onSubmitEnter) {
+      onSubmitEnter(value);  // Pass the current input value to the handler
+    }
+  }
+
   return (
     <>
       <View style={styles.container}>
-        <Text style={styles.txt}>
-          {title}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems : 'center'}}>
+          {children}
+          <Text style={styles.txt}>
+            {title}
+          </Text>
+        </View>
         <View style={styles.inputContainer}>
           <TextInput
             value={value}
             style={styles.input}
             placeholder={placeholder}
             onChangeText={onChangeText}
+            onSubmitEditing={handleSubmit}
+            returnKeyType="done"
             secureTextEntry={title === 'Password' && !showPassword}
             {...props}
           />
