@@ -10,9 +10,10 @@ import {
 } from 'react-native'
 import { useState, useEffect } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
 
 import { search, recentSearches, getRecentSearches } from '../../lib/bookapi'
-import DefaultBook from '../../components/DefaultBook'
+import Book from '../../components/Book'
 import FormField from '../../components/FormField'
 import SearchIcon from '../../assets/icons/search.svg'
 import BookLogo from '../../assets/images/book.svg'
@@ -164,26 +165,14 @@ const Search = () => {
         >
           {res.length > 0 ? (
             res.map((book, index) => (
-              <View
-                key={index}
-                style={{
-                  padding: 10,
-                  marginBottom: 5,
-                  backgroundColor: '#E5E5E5',
-                  borderRadius: 8,
-                }}
-              >
+              <View key={index} style={styles.bookList} >
                 <View style={{ flexDirection: 'row' }}>
 
                   <View style={styles.bookContainer}>
-                    {book.cover_img[0] ? (
-                      <Image
-                        source={{ uri: book.cover_img[0] }}
-                        style={styles.bookCover}
-                      />
-                    ) : (
-                      <DefaultBook title={book?.title} />
-                    )}
+                    <Book
+                      uri={book.cover_img.at(-1)}
+                      title={book.title}
+                    />
                   </View>
 
                   <View style={{ marginLeft: 10, flex: 1 }}>
@@ -192,7 +181,12 @@ const Search = () => {
 
                     <View style={{ flexDirection: 'row', paddingTop: 60, justifyContent: 'space-between', paddingHorizontal: 20 }}>
                       <View style={{ alignItems: 'center' }}>
-                        <TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => router.push({
+                            pathname: `search/${book.id}`,
+                            params: { book: JSON.stringify(book) }
+                          })}
+                        >
                           <AboutIcon height={25} width={25} stroke='black' />
                         </TouchableOpacity>
                         <Text style={[styles.txt, { fontSize: 12, paddingTop: 5 }]}>Info</Text>
@@ -246,6 +240,7 @@ const styles = StyleSheet.create({
   txt: {
     fontFamily: 'Poppins-Regular',
     fontSize: 15,
+    color: '#888',
   },
   txtlg: {
     fontFamily: 'Poppins-Bold',
@@ -255,11 +250,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Bold',
     fontSize: 16,
     marginBottom: 5,
-  },
-  bookCover: {
-    width: 100,
-    height: 170,
-    borderRadius: 3,
   },
   bookContainer: {
     padding: 8,
@@ -275,5 +265,10 @@ const styles = StyleSheet.create({
     // Android Shadow
     elevation: 5,
   },
-
+  bookList: {
+    padding: 10,
+    marginBottom: 5,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 8,
+  }
 })
