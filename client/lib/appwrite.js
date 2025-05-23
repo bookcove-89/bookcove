@@ -1,11 +1,12 @@
 import { Client, Account, ID, Databases } from 'react-native-appwrite';
+import { Query } from 'react-native-appwrite';
 
 export const config = {
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_URL,
   platform: process.env.EXPO_PUBLIC_PLATFORM,
   projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
   databaseId: process.env.EXPO_PUBLIC_DATABASE_ID,
-  userCollectionId: process.env.EXPO_PUBLIC_DATABASE_ID
+  userCollectionId: process.env.EXPO_PUBLIC_USER_COLLECTION_ID
 }
 
 // Init React Native SDK
@@ -59,6 +60,9 @@ export const createUser = async (name, email, password) => {
     }
     else if (error.message.includes("Invalid `password` param")) {
       throw new Error("Password must be 8-265 characters long and not too common.");
+    } 
+    else if (error.message.includes("Invalid `email` param")) {
+      throw new Error("Please enter a valid email format.");
     }
     else {
       throw new Error(error.message || 'Failed to create account')
@@ -77,6 +81,57 @@ export const login = async (email, password) => {
     return session;
   } catch (error) {
     // handle errors
+    if (error.code === 401 && error.type === 'user_invalid_credentials') {
+      throw new Error("Invalid credentials. Please check email and password.");
+    }
+    else if (error.message.includes("Invalid `email` param")) {
+      throw new Error("Please enter a valid email format.");
+    } 
+
     throw new Error(error)
+  }
+}
+
+// Get Account
+export const getAccount = async () => {
+  try {
+    const currentAccount = await account.get();
+
+    return currentAccount;
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
+// Get Current User
+export async function getCurrentUser() {
+  try {
+    const currentAccount = await getAccount();
+    if (!currentAccount) throw Error;
+
+    const currentUser = await databases.listDocuments(
+      config.databaseId,
+      config.userCollectionId,
+      [Query.equal("userId", currentAccount.$id)]
+    );
+
+    if (!currentUser) throw Error;
+    console.log(currentUser)
+    return currentUser.documents[0];
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
+// Sign Out
+export async function signOut() {
+  try {
+    const session = await account.deleteSession("current");
+
+    console.log(session)
+    return session;
+  } catch (error) {
+    throw new Error(error);
   }
 }
