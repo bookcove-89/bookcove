@@ -1,12 +1,12 @@
-import { 
-  View, 
-  Text, 
-  Alert, 
-  StyleSheet, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  Alert,
+  StyleSheet,
+  ScrollView,
   TouchableOpacity,
-  ActivityIndicator, 
-  useWindowDimensions 
+  ActivityIndicator,
+  useWindowDimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -19,15 +19,16 @@ import Header from '../../components/Header';
 import StarIcon from '../../assets/icons/star.svg';
 import BackIcon from '../../assets/icons/back.svg';
 import HeartIcon from '../../assets/icons/heart.svg';
-import AddIcon from '../../assets/icons/bookmark-plus.svg';
+import AddIcon from '../../assets/icons/bookmark-plus.svg'; // This is a good icon for "add"
 
 import { useGlobalContext } from '../../context/GlobalProvider';
 import { addToFavorites as apiAddToFavorites, removeFromFavorites as apiRemoveFromFavorites } from '../../lib/bookapi';
+import { addBookToLib, removeBookFromLib } from '../../lib/libraryapi';
 
 
 const WebDisplay = React.memo(function WebDisplayComponent({ htmlContent, availableContentWidth, baseTextStyle, tagsStylesConfig }) {
   if (!htmlContent) {
-    return null; 
+    return null;
   }
   return (
     <RenderHTML
@@ -45,18 +46,68 @@ const Search = () => {
   const { book: bookStringFromParams } = useLocalSearchParams(); // Renamed for clarity
   const [currentBookDetails, setCurrentBookDetails] = useState(null);
   const [isFavoriting, setIsFavoriting] = useState(false); // To show loading state for favorite action
+  const [isAdding, setIsAdding] = useState(false); // For library add/remove loading state
 
   useEffect(() => {
     if (bookStringFromParams) {
       try {
         const parsed = JSON.parse(bookStringFromParams);
-        setCurrentBookDetails({ ...parsed, is_favorite: parsed.is_favorite || false });
+        // Initialize is_favorite and is_in_library
+        // Assuming your parsed book data might contain `is_favorite` or `is_in_library`
+        // If not, they will default to false.
+        setCurrentBookDetails({
+          ...parsed,
+          is_favorite: parsed.is_favorite || false,
+          is_in_library: parsed.is_in_library || false, // Initialize is_in_library
+        });
       } catch (e) {
         console.error("Error parsing book data from params:", e);
         Alert.alert("Error", "Could not load book details.");
       }
     }
   }, [bookStringFromParams]);
+
+  const handleAddingToLib = async () => {
+    if (!currentBookDetails || !user?.$id) {
+      Alert.alert("Error", "Cannot update library status. User or book data missing.")
+      return;
+    }
+
+    setIsAdding(true);
+
+    try {
+      let newInLibraryState;
+      let alertMessage;
+
+      // Check if the book is currently in the library based on our local state
+      if (currentBookDetails.is_in_library) {
+        // If it's in the library, we want to remove it
+        await removeBookFromLib(user.$id, currentBookDetails);
+        newInLibraryState = false;
+        alertMessage = "Book removed from library";
+      } else {
+        // If it's not in the library, we want to add it
+        // Assuming addBookToLib handles the addition and returns a success indication
+        await addBookToLib(user.$id, currentBookDetails);
+        newInLibraryState = true;
+        alertMessage = "Book added to library";
+      }
+
+      // Update the local state to reflect the new library status
+      setCurrentBookDetails(prevDetails => ({
+        ...prevDetails,
+        is_in_library: newInLibraryState,
+      }));
+
+      Alert.alert("Success", alertMessage);
+
+    } catch (err) {
+      console.error("Error updating library status:", err); // Log the actual error
+      Alert.alert("Error", err.message || "Could not update library status.");
+    } finally {
+      setIsAdding(false);
+    }
+  }
 
   const handleToggleFavorite = async () => {
     if (!currentBookDetails || !user?.$id) {
@@ -69,11 +120,10 @@ const Search = () => {
     try {
       const newFavoriteState = !currentBookDetails.is_favorite;
 
-      // If your API only adds, and you need to handle removal separately:
       if (newFavoriteState) { // We are trying to make it a favorite
-        await apiAddToFavorites(user.$id, currentBookDetails); // Pass the whole book if API needs it
+        await apiAddToFavorites(user.$id, currentBookDetails);
       } else {
-        await apiRemoveFromFavorites(user.$id, currentBookDetails.id, !currentBookDetails.is_favorite)
+        await apiRemoveFromFavorites(user.$id, currentBookDetails.id); // Assuming remove takes book ID
       }
 
       setCurrentBookDetails(prevDetails => ({
@@ -113,7 +163,7 @@ const Search = () => {
     strong: { ...styles.descriptionText, fontWeight: 'bold' },
     em: { ...styles.descriptionText, fontStyle: 'italic' },
     br: { marginVertical: 6 },
-    a: { color: '#3B82F6', textDecorationLine: 'underline' }, 
+    a: { color: '#3B82F6', textDecorationLine: 'underline' },
   };
 
   return (
@@ -179,10 +229,18 @@ const Search = () => {
 
           <View style={styles.actionsRowContainer}>
             <View style={styles.actionButtonContainer}>
-              <TouchableOpacity onPress={() => Alert.alert("Info", "Add to list functionality to be implemented.")}>
-                <AddIcon height={25} width={25} stroke='black' />
+              <TouchableOpacity onPress={handleAddingToLib} disabled={isAdding}>
+                <AddIcon
+                  height={25}
+                  width={25}
+                  stroke='black'
+                  // Fill the icon if the book is in the library
+                  fill={currentBookDetails.is_in_library ? '#3B82F6' : 'white'}
+                />
               </TouchableOpacity>
-              <Text style={[styles.txt, styles.actionButtonText]}>Add to List</Text>
+              <Text style={[styles.txt, styles.actionButtonText]}>
+                {isAdding ? 'Updating...' : (currentBookDetails.is_in_library ? "In Library" : "Add to Library")}
+              </Text>
             </View>
             <View style={styles.actionButtonContainer}>
               <TouchableOpacity onPress={handleToggleFavorite} disabled={isFavoriting}>
@@ -190,7 +248,7 @@ const Search = () => {
                   height={25}
                   width={25}
                   stroke='black'
-                  fill={currentBookDetails.is_favorite ? 'red' : '#E5E5E5'} // Dynamic fill
+                  fill={currentBookDetails.is_favorite ? 'red' : 'white'} // Dynamic fill
                 />
               </TouchableOpacity>
               <Text style={[styles.txt, styles.actionButtonText]}>
