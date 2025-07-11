@@ -1,10 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView } from 'react-native'
-import BookLogo from '../../assets/images/book.svg'
-import EmptyLib from '../../assets/images/empty-lib.svg'
 import { useState } from 'react'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+import EmptyLib from '../../assets/images/empty-lib.svg'
+import Header from '../../components/Header'
 
 import { useGlobalContext } from '../../context/GlobalProvider'
 
@@ -15,15 +14,10 @@ const Home = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View>
-        <View style={styles.headerContainer}>
-          <View>
-            <Text style={styles.txt}>Welcome Back</Text>
-            <Text style={[styles.txtlg, { lineHeight: 27 }]}>
-              {user?.name}
-            </Text>
-          </View>
-          <BookLogo height={48} width={48} />
-        </View>
+        <Header
+          smallTxt={"Welcome Back"}
+          largeTxt={user?.name}
+        />
 
         <ScrollView
           style={{ padding: 10 }}
@@ -66,11 +60,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
+
   txt: {
     fontFamily: 'Poppins-Regular',
     fontSize: 15,
