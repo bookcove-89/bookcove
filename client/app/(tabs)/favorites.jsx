@@ -41,7 +41,7 @@ const Favorites = () => {
     try {
       const data = await getMyFavoriteBooks(userId);
       // Ensure data is an array, default to empty array if not
-      setFavBooks(Array.isArray(data) ? data : []);
+      setFavBooks(Array.isArray(data.books) ? data.books : []);
     } catch (err) {
       console.log("Failed to fetch favorites:", err);
       setFavBooks([]);

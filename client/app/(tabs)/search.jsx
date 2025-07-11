@@ -219,9 +219,6 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   bookContainer: {
-    padding: 8,
-    backgroundColor: '#fff',
-    borderRadius: 8,
     // iOS Shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
