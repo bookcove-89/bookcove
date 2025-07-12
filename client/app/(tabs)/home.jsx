@@ -1,80 +1,354 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Dimensions,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert // Import Alert for better error messages
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
 
-import EmptyLib from '../../assets/images/empty-lib.svg'
 import Header from '../../components/Header'
+import Book from '../../components/Book'
 
 import { useGlobalContext } from '../../context/GlobalProvider'
+import { getMyBooksFromLib } from '../../lib/libraryapi'
+import { getQuote } from '../../lib/quote' // Ensure getQuote is correctly imported
+
+const screenWidth = Dimensions.get('window').width;
+const containerPadding = 20;
+const columnGap = 12;
+const itemMargin = 8;
+
+const numColumns = 3;
+const totalHorizontalPadding = (containerPadding * 2) + ((numColumns - 1) * columnGap) + (itemMargin * 2 * numColumns);
+const bookWidth = (screenWidth - totalHorizontalPadding) / numColumns;
+const bookHeight = bookWidth * 1.5;
 
 const Home = () => {
-  const { loading, isLogged, user } = useGlobalContext()
-  const [books, setBooks] = useState({})
+  const { user } = useGlobalContext() // isLogged is not used, so removed
+  const [books, setBooks] = useState([])
+  const [loadingBooks, setLoadingBooks] = useState(false) 
+  const [loadingQuote, setLoadingQuote] = useState(false)
+  const [quoteOfTheDay, setQuoteOfTheDay] = useState('') 
+  const [quoteAuthor, setQuoteAuthor] = useState('') 
+  const [quoteError, setQuoteError] = useState(false)
+
+  const handleGettingQuote = useCallback(async () => { 
+    setLoadingQuote(true)
+    setQuoteError(false) 
+    try {
+      const res = await getQuote();
+
+      if (Array.isArray(res) && res.length > 0) {
+        setQuoteOfTheDay(res[0].q); // 'q' for quote
+        setQuoteAuthor(res[0].a);   // 'a' for author
+      } else {
+        console.warn("Zenquotes API returned no data or unexpected format:", res);
+        setQuoteError(true);
+        setQuoteOfTheDay("Failed to load quote.");
+        setQuoteAuthor("Please try again later.");
+      }
+    } catch (err) {
+      console.error("Failed to fetch quote:", err);
+      setQuoteError(true);
+      setQuoteOfTheDay("Could not load quote.");
+      setQuoteAuthor("Check your network connection.");
+    } finally {
+      setLoadingQuote(false)
+    }
+  }, []); 
+
+  const handleFetchingBooks = useCallback(async (userId) => {
+    if (!userId) {
+      setBooks([])
+      return
+    }
+    setLoadingBooks(true) 
+    try {
+      const data = await getMyBooksFromLib(userId)
+      setBooks(Array.isArray(data.books) ? data.books : [])
+    } catch (err) {
+      console.error("Failed to fetch my books", err)
+      setBooks([])
+    } finally {
+      setLoadingBooks(false) 
+    }
+  }, [])
+
+
+  useEffect(() => {
+    handleGettingQuote() 
+    if (user?.$id) {
+      handleFetchingBooks(user.$id)
+    } else {
+      setBooks([])
+    }
+  }, [user?.$id, handleFetchingBooks, handleGettingQuote]) 
+
+  const renderBookItem = ({ item: book }) => (
+    <View style={styles.bookItemWrapper}>
+      <TouchableOpacity
+        style={styles.bookTouchable}
+        onPress={() => router.push({
+          pathname: `mybook/${book.id}`,
+          params: { myBook: JSON.stringify(book) }
+        })}
+      >
+        <Book
+          uri={book.cover_img?.at(-1)}
+          title={book.title}
+          width={styles.bookImage.width}
+          height={styles.bookImage.height}
+          radius={8}
+        />
+      </TouchableOpacity>
+      <Text numberOfLines={1} style={styles.bookTitle}>
+        {book.title}
+      </Text>
+    </View>
+  )
 
   return (
     <SafeAreaView style={styles.container}>
-      <View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollViewContent} 
+      >
         <Header
           smallTxt={"Welcome Back"}
-          largeTxt={user?.name}
+          largeTxt={user?.name || "Guest"}
         />
 
-        <ScrollView
-          style={{ padding: 10 }}
-          contentContainerStyle={{ paddingBottom: 100 }}
-        >
-          <View style={{ flex: 1 }}>
-            {books ? (
-              // if there books load this
+        {/* My Library Section  */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>My Library</Text> 
+          {loadingBooks ? (
+            <View style={styles.activityIndicatorContainer}>
+              <ActivityIndicator size="large" color="#E5A000" />
+              <Text style={styles.loadingText}>Loading your library...</Text>
+            </View>
+          ) : books.length > 0 ? (
+            <>
+              <FlatList
+                data={books.slice(0, 3)} 
+                renderItem={renderBookItem}
+                keyExtractor={(item) => item.id.toString()} 
+                numColumns={numColumns}
+                columnWrapperStyle={styles.row}
+                contentContainerStyle={styles.bookListContent}
+                scrollEnabled={false}
+              />
+
+              {/* "See All" button, if there are more than 3 books */}
+              {books.length > 3 && ( 
+                <TouchableOpacity
+                  style={styles.seeAllButton}
+                  onPress={() => router.push('/library')} 
+                >
+                  <Text style={styles.seeAllButtonText}>See All</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyStateText}>Your library is empty!</Text>
+              <Text style={styles.emptyStateSubText}>
+                Add books from the search screen to start tracking your progress.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Quote of the Day Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Quote of the Day</Text>
+          <View style={styles.quoteCard}> 
+            {loadingQuote ? (
+              <ActivityIndicator size="small" color="#E5A000" />
+            ) : quoteError ? (
               <View>
-                <Text style={[styles.txt, { paddingTop: 25 }]}>Currently Reading</Text>
-                {Array.from({ length: 20 }).map((_, index) => (
-                  <View key={index} style={{ padding: 10, marginBottom: 5, backgroundColor: '#f0f0f0', borderRadius: 5 }}>
-                    <Text>Book {index + 1}: Lorem ipsum dolor sit amet </Text>
-                  </View>
-                ))}
+                <Text style={styles.quoteErrorText}>Failed to load quote.</Text>
+                <Text style={styles.quoteErrorSubText}>Please check your internet.</Text>
               </View>
             ) : (
-              // if there are no books shows the empty image
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 125 }}>
-                {/* Background Image */}
-                <EmptyLib height={200} width={300} />
-                {/* Overlay Text */}
-                <Text style={styles.overlayText}>No books added yet. Start tracking your collection now.</Text>
-              </View>
+              <>
+                <Text style={styles.quoteText}>
+                  "{quoteOfTheDay}"
+                </Text>
+                <Text style={styles.quoteAuthor}>
+                  - {quoteAuthor}
+                </Text>
+              </>
             )}
-
           </View>
-        </ScrollView>
+        </View>
 
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
 
-export default Home
+export default Home;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1, 
     backgroundColor: '#fff',
     padding: 20,
   },
-
-  txt: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 15,
+  scrollViewContent: {
+    paddingBottom: 40, 
+    flexGrow: 1, 
   },
-  txtlg: {
+  sectionContainer: {
+    marginTop: 25,
+    marginBottom: 10,
+  },
+  sectionTitle: {
     fontFamily: 'Poppins-Bold',
-    fontSize: 24
+    fontSize: 20,
+    marginBottom: 12,
+    color: '#333',
   },
-  overlayText: {
-    position: 'absolute',
+  // --- Book List Styles ---
+  bookListContent: {
+    
+  },
+  row: {
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  bookItemWrapper: {
+    alignItems: 'center',
+    width: bookWidth + (itemMargin * 2), 
+    marginBottom: 5,
+  },
+  bookTouchable: {
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 4,
+    backgroundColor: '#fff',
+  },
+  bookImage: {
+    width: bookWidth,
+    height: bookHeight,
+    borderRadius: 8,
+  },
+  bookTitle: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 12,
+    marginTop: 8,
     textAlign: 'center',
-    padding: 40,
-    width: '75%',
-    fontFamily: 'Poppins-Regular',
-    paddingTop: 75
+    color: '#333',
+    width: bookWidth,
   },
-})
+  // --- Loading & Empty States (Shared) ---
+  activityIndicatorContainer: {
+    height: bookHeight * 2, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontFamily: 'Poppins-Regular',
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+  },
+  emptyStateContainer: {
+    height: bookHeight * 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 20
+  },
+  emptyStateText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  emptyStateSubText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  placeholderSection: { 
+    height: bookHeight * 1.2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 20,
+  },
+  // --- "See All" Button Styles ---
+  seeAllButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#E5A000',
+    borderRadius: 8,
+    alignSelf: 'center',
+  },
+  seeAllButtonText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    color: '#fff',
+  },
+  // --- Quote of the Day Styles ---
+  quoteCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 20,
+    minHeight: 120, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  quoteText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  quoteAuthor: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 14,
+    color: '#777',
+    textAlign: 'center',
+  },
+  quoteErrorText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
+    color: 'red',
+    textAlign: 'center',
+  },
+  quoteErrorSubText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 13,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 5,
+  }
+});
