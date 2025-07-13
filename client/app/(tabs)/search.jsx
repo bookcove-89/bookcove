@@ -36,13 +36,13 @@ const Search = () => {
   useEffect(() => {
     if (form.book_name.trim() === '') {
       setRes([]);
-      handleGetRecentSearches()
+      handleGetRecentSearches(user?.$id)
     }
-  }, [form.book_name]);
+  }, [form.book_name, user?.$id]);
 
-  const handleGetRecentSearches = async () => {
+  const handleGetRecentSearches = async (uid) => {
     try {
-      const data = await getRecentSearches()
+      const data = await getRecentSearches(uid)
 
       setRecentSearchItems(data.recent_searches)
     } catch (err) {
@@ -52,7 +52,7 @@ const Search = () => {
 
   const handlePostRecentSearches = async (bookname) => {
     try {
-      const data = await recentSearches(bookname)
+      const data = await recentSearches(bookname, user?.$id)
 
       setRecentSearchItems(data.recent_searches)
     } catch (err) {
@@ -65,7 +65,7 @@ const Search = () => {
     setRes([]);
 
     try {
-      const data = await search(bookname);
+      const data = await search(bookname, user?.$id);
       await handlePostRecentSearches(bookname)
       setRes(data.data);
     } catch (err) {

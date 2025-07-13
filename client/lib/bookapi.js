@@ -6,9 +6,14 @@ const baseUrl = process.env.EXPO_PUBLIC_BASE_URL;
  * @returns {Promise<Array<Object>>} A promise that resolves to an array of book objects.
  * @throws {Error} If the network response is not ok.
  **********************************************************/
-export const search = async (bookname) => {
-  const url = `${baseUrl}/search?bookname=${encodeURIComponent(bookname)}`;
-  const res = await fetch(url);
+export const search = async (bookname, uid) => {
+  const url = `${baseUrl}/search?bookname=${encodeURIComponent(bookname)}&uid=${encodeURIComponent(uid)}`;
+  const res = await fetch(url, {
+    method: 'GET', 
+    headers: {
+      "Content-Type": "application/json"
+    },
+  });
 
   if (!res.ok) {
     const err = await res.json();
@@ -24,14 +29,14 @@ export const search = async (bookname) => {
  * @returns {Promise<Object>} A promise that resolves to the server's response (e.g., a success message).
  * @throws {Error} If the network response is not ok.
  **********************************************************/
-export const recentSearches = async (searchItem) => {
+export const recentSearches = async (searchItem, uid) => {
   const url = `${baseUrl}/recent-searches`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ search_item: searchItem })
+    body: JSON.stringify({ search_item: searchItem, uid: uid })
   });
 
   if (!res.ok) {
@@ -47,8 +52,8 @@ export const recentSearches = async (searchItem) => {
  * @returns {Promise<Array<string>>} A promise that resolves to an array of recent search terms.
  * @throws {Error} If the network response is not ok.
  **********************************************************/
-export const getRecentSearches = async (searchItem) => {
-  const url = `${baseUrl}/recent-searches`;
+export const getRecentSearches = async (uid) => {
+  const url = `${baseUrl}/recent-searches?uid=${encodeURIComponent(uid)}`;
   const res = await fetch(url, {
     method: 'GET',
     headers: {
